@@ -347,6 +347,106 @@
   text-align: right !important;
 }
 
+.csi-prop-input {
+  font-size: 11px !important;
+  color: #1f2937 !important;
+  font-family: 'SF Mono', Monaco, monospace !important;
+  padding: 4px 8px !important;
+  background: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  outline: none !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  text-align: right !important;
+  transition: all 0.2s !important;
+  cursor: text !important;
+}
+
+.csi-prop-input:hover {
+  border-color: #c4b5fd !important;
+  background: #ffffff !important;
+}
+
+.csi-prop-input:focus {
+  border-color: #a78bfa !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1) !important;
+}
+
+.csi-prop-select {
+  font-size: 11px !important;
+  color: #1f2937 !important;
+  font-family: 'SF Mono', Monaco, monospace !important;
+  padding: 4px 8px !important;
+  background: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  outline: none !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  text-align: right !important;
+  transition: all 0.2s !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  padding-right: 28px !important;
+}
+
+.csi-prop-select:hover {
+  border-color: #c4b5fd !important;
+  background-color: #ffffff !important;
+}
+
+.csi-prop-select:focus {
+  border-color: #a78bfa !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1) !important;
+}
+
+.csi-input-wrapper {
+  position: relative !important;
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.csi-dropdown-arrow {
+  position: absolute !important;
+  right: 8px !important;
+  pointer-events: none !important;
+  color: #9ca3af !important;
+}
+
+.csi-color-picker {
+  width: 32px !important;
+  height: 24px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s !important;
+}
+
+.csi-color-picker:hover {
+  border-color: #a78bfa !important;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1) !important;
+}
+
+.csi-color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px !important;
+}
+
+.csi-color-picker::-webkit-color-swatch {
+  border: none !important;
+  border-radius: 4px !important;
+}
+
 .csi-color-swatch {
   width: 16px !important;
   height: 16px !important;
@@ -521,4 +621,93 @@
   white-space: nowrap !important;
   line-height: 1 !important;
   letter-spacing: 0.3px !important;
+}
+
+/* ===== Box Model - Visual Nested Design ===== */
+.csi-box-visual {
+  padding: 20px !important;
+  font-family: 'SF Mono', Monaco, monospace !important;
+}
+
+.csi-layer {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  border: 2px dashed !important;
+  min-height: 60px !important;
+}
+
+.csi-layer-margin {
+  background: rgba(251, 191, 36, 0.08) !important;
+  border-color: #f59e0b !important;
+  padding: 25px !important;
+}
+
+.csi-layer-border {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: #8b5cf6 !important;
+  padding: 20px !important;
+  width: 100% !important;
+}
+
+.csi-layer-padding {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: #3b82f6 !important;
+  padding: 20px !important;
+  width: 100% !important;
+}
+
+.csi-layer-content {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  border: 2px solid #6366f1 !important;
+  border-radius: 8px !important;
+  padding: 20px 30px !important;
+  width: 100% !important;
+  min-height: 50px !important;
+}
+
+.csi-layer-value {
+  position: absolute !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #6b7280 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.csi-layer-top {
+  top: 4px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.csi-layer-right {
+  right: 4px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.csi-layer-bottom {
+  bottom: 4px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.csi-layer-left {
+  left: 4px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.csi-content-size {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  letter-spacing: 0.5px !important;
 }

@@ -316,17 +316,45 @@
     });
   }
   
-  function createPropertyRow(name, value, isColor = false) {
+  function createPropertyRow(name, value, isColor = false, editable = true) {
     const displayValue = value || 'none';
-    const colorPreview = isColor && displayValue !== 'none' ? 
-      `<span class="csi-color-swatch" style="background: ${displayValue}"></span>` : '';
-    
+    const hasColorPicker = isColor && displayValue !== 'none';
+
+    // Check if this property should have a dropdown
+    const dropdownOptions = getDropdownOptions(name);
+    const hasDropdown = dropdownOptions && dropdownOptions.length > 0;
+
+    // Reorder options to show current value first
+    let orderedOptions = dropdownOptions;
+    if (hasDropdown && displayValue) {
+      orderedOptions = [...dropdownOptions];
+      const currentIndex = orderedOptions.indexOf(displayValue);
+      if (currentIndex > -1) {
+        // Move current value to the top
+        orderedOptions.splice(currentIndex, 1);
+        orderedOptions.unshift(displayValue);
+      } else {
+        // Current value not in list, add it at the top
+        orderedOptions.unshift(displayValue);
+      }
+    }
+
     return `
       <div class="csi-prop-row">
         <span class="csi-prop-name">${name}</span>
         <div class="csi-prop-value-wrap">
-          ${colorPreview}
-          <span class="csi-prop-value">${displayValue}</span>
+          ${hasColorPicker ?
+            `<input type="color" class="csi-color-picker" data-property="${name}" value="${rgbToHex(displayValue)}" title="Pick color">` :
+            ''
+          }
+          ${editable && hasDropdown ?
+            `<select class="csi-prop-select" data-property="${name}" title="Select or type custom value">
+              ${orderedOptions.map(opt => `<option value="${opt}" ${opt === displayValue ? 'selected' : ''}>${opt}</option>`).join('')}
+            </select>` :
+            editable ?
+            `<input type="text" class="csi-prop-input" data-property="${name}" value="${displayValue}" title="Click to edit">` :
+            `<span class="csi-prop-value">${displayValue}</span>`
+          }
           <button class="csi-copy-btn" data-copy="${name}: ${displayValue};" title="Copy">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -336,6 +364,54 @@
         </div>
       </div>
     `;
+  }
+
+  function getDropdownOptions(property) {
+    const options = {
+      'font-weight': ['100', '200', '300', '400', '500', '600', '700', '800', '900', 'normal', 'bold', 'bolder', 'lighter'],
+      'font-style': ['normal', 'italic', 'oblique'],
+      'text-align': ['left', 'center', 'right', 'justify', 'start', 'end'],
+      'text-transform': ['none', 'capitalize', 'uppercase', 'lowercase'],
+      'text-decoration': ['none', 'underline', 'overline', 'line-through'],
+      'display': ['block', 'inline', 'inline-block', 'flex', 'inline-flex', 'grid', 'inline-grid', 'none', 'table', 'table-row', 'table-cell'],
+      'position': ['static', 'relative', 'absolute', 'fixed', 'sticky'],
+      'flex-direction': ['row', 'row-reverse', 'column', 'column-reverse'],
+      'justify-content': ['flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly'],
+      'align-items': ['flex-start', 'flex-end', 'center', 'baseline', 'stretch'],
+      'align-content': ['flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'stretch'],
+      'flex-wrap': ['nowrap', 'wrap', 'wrap-reverse'],
+      'overflow': ['visible', 'hidden', 'scroll', 'auto'],
+      'overflow-x': ['visible', 'hidden', 'scroll', 'auto'],
+      'overflow-y': ['visible', 'hidden', 'scroll', 'auto'],
+      'cursor': ['auto', 'default', 'pointer', 'wait', 'text', 'move', 'not-allowed', 'help', 'crosshair', 'grab', 'grabbing'],
+      'visibility': ['visible', 'hidden', 'collapse'],
+      'white-space': ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line'],
+      'word-break': ['normal', 'break-all', 'keep-all', 'break-word'],
+      'box-sizing': ['content-box', 'border-box'],
+      'float': ['none', 'left', 'right'],
+      'clear': ['none', 'left', 'right', 'both'],
+    };
+
+    return options[property] || null;
+  }
+
+  function rgbToHex(color) {
+    // If already hex, return it
+    if (color.startsWith('#')) {
+      return color.length === 7 ? color : '#000000';
+    }
+
+    // Convert rgb/rgba to hex
+    const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+      const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+      const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+
+    // Named colors or other formats - return black as fallback
+    return '#000000';
   }
   
   function createSection(icon, title, content) {
@@ -349,25 +425,82 @@
       </div>
     `;
   }
-  
+
+  function createBoxModel(el, styles) {
+    const margin = {
+      top: parseFloat(styles.marginTop) || 0,
+      right: parseFloat(styles.marginRight) || 0,
+      bottom: parseFloat(styles.marginBottom) || 0,
+      left: parseFloat(styles.marginLeft) || 0
+    };
+    const border = {
+      top: parseFloat(styles.borderTopWidth) || 0,
+      right: parseFloat(styles.borderRightWidth) || 0,
+      bottom: parseFloat(styles.borderBottomWidth) || 0,
+      left: parseFloat(styles.borderLeftWidth) || 0
+    };
+    const padding = {
+      top: parseFloat(styles.paddingTop) || 0,
+      right: parseFloat(styles.paddingRight) || 0,
+      bottom: parseFloat(styles.paddingBottom) || 0,
+      left: parseFloat(styles.paddingLeft) || 0
+    };
+    const rect = el.getBoundingClientRect();
+    const width = Math.round(rect.width);
+    const height = Math.round(rect.height);
+
+    return `
+      <div class="csi-box-visual">
+        <!-- Margin Layer -->
+        <div class="csi-layer csi-layer-margin">
+          <div class="csi-layer-value csi-layer-top">${Math.round(margin.top)}</div>
+          <div class="csi-layer-value csi-layer-right">${Math.round(margin.right)}</div>
+          <div class="csi-layer-value csi-layer-bottom">${Math.round(margin.bottom)}</div>
+          <div class="csi-layer-value csi-layer-left">${Math.round(margin.left)}</div>
+
+          <!-- Border Layer -->
+          <div class="csi-layer csi-layer-border">
+            <div class="csi-layer-value csi-layer-top">${Math.round(border.top)}</div>
+            <div class="csi-layer-value csi-layer-right">${Math.round(border.right)}</div>
+            <div class="csi-layer-value csi-layer-bottom">${Math.round(border.bottom)}</div>
+            <div class="csi-layer-value csi-layer-left">${Math.round(border.left)}</div>
+
+            <!-- Padding Layer -->
+            <div class="csi-layer csi-layer-padding">
+              <div class="csi-layer-value csi-layer-top">${Math.round(padding.top)}</div>
+              <div class="csi-layer-value csi-layer-right">${Math.round(padding.right)}</div>
+              <div class="csi-layer-value csi-layer-bottom">${Math.round(padding.bottom)}</div>
+              <div class="csi-layer-value csi-layer-left">${Math.round(padding.left)}</div>
+
+              <!-- Content Layer -->
+              <div class="csi-layer csi-layer-content">
+                <div class="csi-content-size">${width} × ${height}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderInspector(el) {
     const styles = window.getComputedStyle(el);
     const rect = el.getBoundingClientRect();
     const html = el.outerHTML;
-    
+
     const body = panel.querySelector('.csi-panel-body');
     body.innerHTML = `
       <div class="csi-element-info">
         <div class="csi-element-tag">${getElementSelector(el)}</div>
         <div class="csi-element-dims">${Math.round(rect.width)} × ${Math.round(rect.height)}</div>
       </div>
-      
+
       <div class="csi-tabs">
         <button class="csi-tab active" data-tab="styles">Styles</button>
         <button class="csi-tab" data-tab="computed">All Properties</button>
         <button class="csi-tab" data-tab="html">HTML</button>
       </div>
-      
+
       <div class="csi-tab-panel active" data-panel="styles">
         ${createSection('🔤', 'Typography', `
           ${createPropertyRow('font-family', styles.fontFamily)}
@@ -378,13 +511,15 @@
           ${createPropertyRow('text-align', styles.textAlign)}
           ${createPropertyRow('text-transform', styles.textTransform)}
         `)}
-        
+
         ${createSection('🎨', 'Colors', `
           ${createPropertyRow('color', styles.color, true)}
           ${createPropertyRow('background', styles.backgroundColor, true)}
           ${createPropertyRow('border-color', styles.borderColor, true)}
         `)}
-        
+
+        ${createSection('📦', 'Box Model', createBoxModel(el, styles))}
+
         ${createSection('📐', 'Spacing & Size', `
           ${createPropertyRow('width', styles.width)}
           ${createPropertyRow('height', styles.height)}
@@ -423,20 +558,13 @@
         <div class="csi-computed-list">
           ${Array.from(styles).sort().map(prop => {
             const val = styles.getPropertyValue(prop);
-            return val ? `
-              <div class="csi-prop-row" data-prop="${prop}">
-                <span class="csi-prop-name">${prop}</span>
-                <div class="csi-prop-value-wrap">
-                  <span class="csi-prop-value">${val}</span>
-                  <button class="csi-copy-btn" data-copy="${prop}: ${val};" title="Copy">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ` : '';
+            if (!val) return '';
+
+            // Check if this is a color property
+            const isColor = prop.includes('color') || prop.includes('background-color') || prop.includes('border-color') || prop.includes('fill') || prop.includes('stroke');
+
+            // Create a wrapper div with data-prop for search functionality
+            return `<div data-prop="${prop}">${createPropertyRow(prop, val, isColor, true)}</div>`;
           }).join('')}
         </div>
       </div>
@@ -479,11 +607,87 @@
     if (search) {
       search.oninput = (e) => {
         const q = e.target.value.toLowerCase();
-        body.querySelectorAll('.csi-computed-list .csi-prop-row').forEach(row => {
-          row.style.display = row.dataset.prop.includes(q) ? 'flex' : 'none';
+        body.querySelectorAll('.csi-computed-list > div[data-prop]').forEach(wrapper => {
+          wrapper.style.display = wrapper.dataset.prop.includes(q) ? 'block' : 'none';
         });
       };
     }
+
+    // CSS Property Editing
+    body.querySelectorAll('.csi-prop-input').forEach(input => {
+      // Update on input (real-time)
+      input.oninput = (e) => {
+        e.stopPropagation();
+        const property = input.dataset.property;
+        const value = input.value;
+        if (selectedElement) {
+          selectedElement.style[toCamelCase(property)] = value;
+          updateSelectPosition();
+        }
+      };
+
+      // Prevent clicks from propagating
+      input.onclick = (e) => {
+        e.stopPropagation();
+      };
+
+      // Handle Enter key
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          input.blur();
+        }
+        e.stopPropagation();
+      };
+    });
+
+    // Color Picker Editing
+    body.querySelectorAll('.csi-color-picker').forEach(picker => {
+      // Update on color change (real-time)
+      picker.oninput = (e) => {
+        e.stopPropagation();
+        const property = picker.dataset.property;
+        const value = picker.value;
+        if (selectedElement) {
+          selectedElement.style[toCamelCase(property)] = value;
+
+          // Update the corresponding text input if it exists
+          const textInput = picker.parentElement.querySelector('.csi-prop-input');
+          if (textInput) {
+            textInput.value = value;
+          }
+
+          updateSelectPosition();
+        }
+      };
+
+      // Prevent clicks from propagating
+      picker.onclick = (e) => {
+        e.stopPropagation();
+      };
+    });
+
+    // Select Dropdown Editing
+    body.querySelectorAll('.csi-prop-select').forEach(select => {
+      // Update on change
+      select.onchange = (e) => {
+        e.stopPropagation();
+        const property = select.dataset.property;
+        const value = select.value;
+        if (selectedElement) {
+          selectedElement.style[toCamelCase(property)] = value;
+          updateSelectPosition();
+        }
+      };
+
+      // Prevent clicks from propagating
+      select.onclick = (e) => {
+        e.stopPropagation();
+      };
+    });
+  }
+
+  function toCamelCase(str) {
+    return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
   }
   
   function copyAllStyles() {
