@@ -10,6 +10,7 @@
   let selectLabel = null;
   let selectedElement = null;
   let copiedTimeout = null;
+  let addedProperties = {}; // Track added properties per element
   
   window.CSSInspector = { toggle };
   
@@ -395,6 +396,25 @@
     return options[property] || null;
   }
 
+  // All available CSS properties with their categories
+  function getAllCSSProperties() {
+    return {
+      'Typography': ['font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-align', 'text-transform', 'text-decoration', 'text-indent', 'word-spacing'],
+      'Colors': ['color', 'background-color', 'border-color', 'outline-color'],
+      'Spacing & Size': ['width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
+      'Border': ['border', 'border-width', 'border-style', 'border-color', 'border-radius', 'border-top', 'border-right', 'border-bottom', 'border-left', 'outline', 'outline-width', 'outline-style'],
+      'Layout': ['display', 'position', 'top', 'right', 'bottom', 'left', 'z-index', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'align-content', 'gap', 'row-gap', 'column-gap', 'flex', 'flex-grow', 'flex-shrink', 'flex-basis', 'order', 'grid-template-columns', 'grid-template-rows', 'grid-gap'],
+      'Effects': ['opacity', 'box-shadow', 'text-shadow', 'transform', 'transition', 'animation', 'filter', 'backdrop-filter'],
+      'Other': ['overflow', 'overflow-x', 'overflow-y', 'cursor', 'visibility', 'white-space', 'word-break', 'box-sizing', 'float', 'clear', 'object-fit', 'pointer-events']
+    };
+  }
+
+  // Check if a property is a color property
+  function isColorProperty(property) {
+    const colorProps = ['color', 'background-color', 'border-color', 'outline-color', 'background'];
+    return colorProps.includes(property);
+  }
+
   function rgbToHex(color) {
     // If already hex, return it
     if (color.startsWith('#')) {
@@ -450,43 +470,178 @@
     const height = Math.round(rect.height);
 
     return `
-      <div class="csi-box-visual">
-        <!-- Margin Layer -->
-        <div class="csi-layer csi-layer-margin">
-          <div class="csi-layer-value csi-layer-top">${Math.round(margin.top)}</div>
-          <div class="csi-layer-value csi-layer-right">${Math.round(margin.right)}</div>
-          <div class="csi-layer-value csi-layer-bottom">${Math.round(margin.bottom)}</div>
-          <div class="csi-layer-value csi-layer-left">${Math.round(margin.left)}</div>
-
-          <!-- Border Layer -->
-          <div class="csi-layer csi-layer-border">
-            <div class="csi-layer-value csi-layer-top">${Math.round(border.top)}</div>
-            <div class="csi-layer-value csi-layer-right">${Math.round(border.right)}</div>
-            <div class="csi-layer-value csi-layer-bottom">${Math.round(border.bottom)}</div>
-            <div class="csi-layer-value csi-layer-left">${Math.round(border.left)}</div>
-
-            <!-- Padding Layer -->
-            <div class="csi-layer csi-layer-padding">
-              <div class="csi-layer-value csi-layer-top">${Math.round(padding.top)}</div>
-              <div class="csi-layer-value csi-layer-right">${Math.round(padding.right)}</div>
-              <div class="csi-layer-value csi-layer-bottom">${Math.round(padding.bottom)}</div>
-              <div class="csi-layer-value csi-layer-left">${Math.round(padding.left)}</div>
-
-              <!-- Content Layer -->
-              <div class="csi-layer csi-layer-content">
-                <div class="csi-content-size">${width} × ${height}</div>
-              </div>
+      <div class="csi-box-model-grid">
+        <!-- Margin Row -->
+        <div class="csi-box-model-row">
+          <div class="csi-box-model-label">Margin</div>
+          <div class="csi-box-model-values">
+            <div class="csi-box-value">
+              <span class="csi-box-direction">↑</span>
+              <span>${Math.round(margin.top)}</span>
             </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">→</span>
+              <span>${Math.round(margin.right)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">↓</span>
+              <span>${Math.round(margin.bottom)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">←</span>
+              <span>${Math.round(margin.left)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Border Row -->
+        <div class="csi-box-model-row">
+          <div class="csi-box-model-label">Border</div>
+          <div class="csi-box-model-values">
+            <div class="csi-box-value">
+              <span class="csi-box-direction">↑</span>
+              <span>${Math.round(border.top)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">→</span>
+              <span>${Math.round(border.right)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">↓</span>
+              <span>${Math.round(border.bottom)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">←</span>
+              <span>${Math.round(border.left)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Padding Row -->
+        <div class="csi-box-model-row">
+          <div class="csi-box-model-label">Padding</div>
+          <div class="csi-box-model-values">
+            <div class="csi-box-value">
+              <span class="csi-box-direction">↑</span>
+              <span>${Math.round(padding.top)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">→</span>
+              <span>${Math.round(padding.right)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">↓</span>
+              <span>${Math.round(padding.bottom)}</span>
+            </div>
+            <div class="csi-box-value">
+              <span class="csi-box-direction">←</span>
+              <span>${Math.round(padding.left)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Row -->
+        <div class="csi-box-model-row csi-box-model-content-row">
+          <div class="csi-box-model-label">Content</div>
+          <div class="csi-box-model-content-size">
+            <span class="csi-box-dimension">
+              <span class="csi-dimension-label">W:</span>
+              <span class="csi-dimension-value">${width}px</span>
+            </span>
+            <span class="csi-box-dimension">
+              <span class="csi-dimension-label">H:</span>
+              <span class="csi-dimension-value">${height}px</span>
+            </span>
           </div>
         </div>
       </div>
     `;
   }
 
+  function getElementKey(el) {
+    // Create a unique key for the element
+    if (!el) return null;
+    if (el.id) return `#${el.id}`;
+
+    // Use element reference as key
+    if (!el.__csi_uid) {
+      el.__csi_uid = 'csi_' + Math.random().toString(36).substring(2, 11);
+    }
+    return el.__csi_uid;
+  }
+
+  function getExistingProperties() {
+    if (!selectedElement) return [];
+    const existing = new Set();
+
+    // Add all properties from the styles panel
+    const commonProps = [
+      'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing',
+      'text-align', 'text-transform', 'text-decoration', 'color', 'background-color', 'border-color',
+      'width', 'height', 'padding', 'margin', 'border', 'border-radius',
+      'display', 'position', 'z-index', 'flex-direction', 'justify-content', 'align-items', 'gap',
+      'opacity', 'box-shadow', 'transform', 'transition'
+    ];
+
+    commonProps.forEach(prop => existing.add(prop));
+
+    // Add properties that were added dynamically
+    const elementKey = getElementKey(selectedElement);
+    if (elementKey && addedProperties[elementKey]) {
+      Object.keys(addedProperties[elementKey]).forEach(prop => existing.add(prop));
+    }
+
+    return Array.from(existing);
+  }
+
+  function getAddedPropertiesForCategory(category) {
+    if (!selectedElement) return '';
+
+    const elementKey = getElementKey(selectedElement);
+    if (!elementKey || !addedProperties[elementKey]) return '';
+
+    const allProps = getAllCSSProperties();
+    const categoryProps = allProps[category] || [];
+    const styles = window.getComputedStyle(selectedElement);
+
+    let html = '';
+    categoryProps.forEach(prop => {
+      if (addedProperties[elementKey][prop]) {
+        const value = styles.getPropertyValue(prop) || addedProperties[elementKey][prop];
+        const isColor = isColorProperty(prop);
+        html += createPropertyRow(prop, value, isColor);
+      }
+    });
+
+    return html;
+  }
+
+  function getAvailableProperties() {
+    const existing = new Set(getExistingProperties());
+    const allProps = getAllCSSProperties();
+    const available = [];
+
+    Object.keys(allProps).forEach(category => {
+      allProps[category].forEach(prop => {
+        if (!existing.has(prop)) {
+          available.push({ category, property: prop });
+        }
+      });
+    });
+
+    return available;
+  }
+
   function renderInspector(el) {
     const styles = window.getComputedStyle(el);
     const rect = el.getBoundingClientRect();
     const html = el.outerHTML;
+
+    // Helper to create section only if it has content
+    const createSectionIfHasContent = (icon, title, content) => {
+      const trimmedContent = content.trim();
+      return trimmedContent ? createSection(icon, title, trimmedContent) : '';
+    };
 
     const body = panel.querySelector('.csi-panel-body');
     body.innerHTML = `
@@ -510,12 +665,14 @@
           ${createPropertyRow('letter-spacing', styles.letterSpacing)}
           ${createPropertyRow('text-align', styles.textAlign)}
           ${createPropertyRow('text-transform', styles.textTransform)}
+          ${getAddedPropertiesForCategory('Typography')}
         `)}
 
         ${createSection('🎨', 'Colors', `
           ${createPropertyRow('color', styles.color, true)}
           ${createPropertyRow('background', styles.backgroundColor, true)}
           ${createPropertyRow('border-color', styles.borderColor, true)}
+          ${getAddedPropertiesForCategory('Colors')}
         `)}
 
         ${createSection('📦', 'Box Model', createBoxModel(el, styles))}
@@ -527,8 +684,11 @@
           ${createPropertyRow('margin', styles.margin)}
           ${createPropertyRow('border', styles.border)}
           ${createPropertyRow('border-radius', styles.borderRadius)}
+          ${getAddedPropertiesForCategory('Spacing & Size')}
         `)}
-        
+
+        ${createSectionIfHasContent('📏', 'Border', getAddedPropertiesForCategory('Border'))}
+
         ${createSection('📦', 'Layout', `
           ${createPropertyRow('display', styles.display)}
           ${createPropertyRow('position', styles.position)}
@@ -537,14 +697,30 @@
           ${createPropertyRow('justify-content', styles.justifyContent)}
           ${createPropertyRow('align-items', styles.alignItems)}
           ${createPropertyRow('gap', styles.gap)}
+          ${getAddedPropertiesForCategory('Layout')}
         `)}
-        
+
         ${createSection('✨', 'Effects', `
           ${createPropertyRow('opacity', styles.opacity)}
           ${createPropertyRow('box-shadow', styles.boxShadow)}
           ${createPropertyRow('transform', styles.transform)}
           ${createPropertyRow('transition', styles.transition)}
+          ${getAddedPropertiesForCategory('Effects')}
         `)}
+
+        ${createSectionIfHasContent('🔧', 'Other', getAddedPropertiesForCategory('Other'))}
+
+        <div class="csi-add-property-section" id="csi-add-property-container">
+          <div class="csi-add-property-btn" id="csi-add-property-btn">
+            <span class="csi-add-btn-text">Add other CSS element</span>
+            <button class="csi-add-btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
       
       <div class="csi-tab-panel" data-panel="computed">
@@ -684,6 +860,191 @@
         e.stopPropagation();
       };
     });
+
+    // Add Property Button Handler
+    const addPropertyBtn = body.querySelector('#csi-add-property-btn');
+    if (addPropertyBtn) {
+      addPropertyBtn.onclick = (e) => {
+        e.stopPropagation();
+        showAddPropertyForm();
+      };
+    }
+  }
+
+  function showAddPropertyForm() {
+    const container = panel.querySelector('#csi-add-property-container');
+    if (!container) return;
+
+    const availableProps = getAvailableProperties();
+    if (availableProps.length === 0) {
+      container.innerHTML = `
+        <div class="csi-add-property-empty">
+          All common CSS properties are already displayed above!
+        </div>
+      `;
+      return;
+    }
+
+    // Group properties by category for the dropdown
+    const allProps = getAllCSSProperties();
+    let optionsHTML = '<option value="">Select a CSS property...</option>';
+
+    Object.keys(allProps).forEach(category => {
+      const categoryProps = allProps[category].filter(prop => {
+        return availableProps.some(ap => ap.property === prop);
+      });
+
+      if (categoryProps.length > 0) {
+        optionsHTML += `<optgroup label="${category}">`;
+        categoryProps.forEach(prop => {
+          optionsHTML += `<option value="${prop}">${prop}</option>`;
+        });
+        optionsHTML += '</optgroup>';
+      }
+    });
+
+    container.innerHTML = `
+      <div class="csi-add-property-form">
+        <div class="csi-add-form-row">
+          <div class="csi-add-form-left">
+            <select class="csi-add-property-select" id="csi-new-property-select">
+              ${optionsHTML}
+            </select>
+          </div>
+          <div class="csi-add-form-right" id="csi-new-property-input-container">
+            <span class="csi-add-placeholder">Select a property first</span>
+          </div>
+        </div>
+        <div class="csi-add-form-actions">
+          <button class="csi-add-cancel-btn" id="csi-add-cancel">Cancel</button>
+          <button class="csi-add-apply-btn" id="csi-add-apply" disabled>Add Property</button>
+        </div>
+      </div>
+    `;
+
+    // Setup event handlers
+    const propertySelect = container.querySelector('#csi-new-property-select');
+    const inputContainer = container.querySelector('#csi-new-property-input-container');
+    const applyBtn = container.querySelector('#csi-add-apply');
+    const cancelBtn = container.querySelector('#csi-add-cancel');
+
+    propertySelect.onchange = (e) => {
+      e.stopPropagation();
+      const selectedProp = e.target.value;
+
+      if (!selectedProp) {
+        inputContainer.innerHTML = '<span class="csi-add-placeholder">Select a property first</span>';
+        applyBtn.disabled = true;
+        return;
+      }
+
+      applyBtn.disabled = false;
+
+      // Check if this property has dropdown options
+      const dropdownOptions = getDropdownOptions(selectedProp);
+      const isColor = isColorProperty(selectedProp);
+
+      if (dropdownOptions && dropdownOptions.length > 0) {
+        // Render dropdown
+        inputContainer.innerHTML = `
+          <select class="csi-add-value-select" id="csi-new-property-value">
+            ${dropdownOptions.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+          </select>
+        `;
+      } else if (isColor) {
+        // Render color picker with text input
+        inputContainer.innerHTML = `
+          <div class="csi-add-color-wrapper">
+            <input type="color" class="csi-add-color-picker" id="csi-new-property-color" value="#000000">
+            <input type="text" class="csi-add-value-input csi-add-color-input" id="csi-new-property-value" value="#000000" placeholder="Enter value...">
+          </div>
+        `;
+
+        // Sync color picker with text input
+        const colorPicker = inputContainer.querySelector('#csi-new-property-color');
+        const textInput = inputContainer.querySelector('#csi-new-property-value');
+
+        colorPicker.oninput = (e) => {
+          e.stopPropagation();
+          textInput.value = e.target.value;
+        };
+
+        textInput.oninput = (e) => {
+          e.stopPropagation();
+          if (e.target.value.startsWith('#')) {
+            colorPicker.value = e.target.value;
+          }
+        };
+
+        colorPicker.onclick = (e) => e.stopPropagation();
+        textInput.onclick = (e) => e.stopPropagation();
+      } else {
+        // Render text input
+        inputContainer.innerHTML = `
+          <input type="text" class="csi-add-value-input" id="csi-new-property-value" placeholder="Enter value..." autofocus>
+        `;
+
+        const textInput = inputContainer.querySelector('#csi-new-property-value');
+        textInput.onclick = (e) => e.stopPropagation();
+      }
+
+      // Stop propagation on all selects
+      inputContainer.querySelectorAll('select').forEach(select => {
+        select.onclick = (e) => e.stopPropagation();
+      });
+    };
+
+    propertySelect.onclick = (e) => e.stopPropagation();
+
+    applyBtn.onclick = (e) => {
+      e.stopPropagation();
+      const selectedProp = propertySelect.value;
+      const valueInput = container.querySelector('#csi-new-property-value');
+
+      if (!selectedProp || !valueInput) return;
+
+      const value = valueInput.value;
+      if (!value) return;
+
+      // Apply the CSS property to the selected element
+      if (selectedElement) {
+        selectedElement.style[toCamelCase(selectedProp)] = value;
+        updateSelectPosition();
+
+        // Track the added property
+        const elementKey = getElementKey(selectedElement);
+        if (elementKey) {
+          if (!addedProperties[elementKey]) {
+            addedProperties[elementKey] = {};
+          }
+          addedProperties[elementKey][selectedProp] = value;
+        }
+      }
+
+      // Re-render the inspector to show the new property
+      renderInspector(selectedElement);
+    };
+
+    cancelBtn.onclick = (e) => {
+      e.stopPropagation();
+      container.innerHTML = `
+        <div class="csi-add-property-btn" id="csi-add-property-btn">
+          <span class="csi-add-btn-text">Add other CSS element</span>
+          <button class="csi-add-btn-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      `;
+
+      const newAddBtn = container.querySelector('#csi-add-property-btn');
+      newAddBtn.onclick = (e) => {
+        e.stopPropagation();
+        showAddPropertyForm();
+      };
+    };
   }
 
   function toCamelCase(str) {
