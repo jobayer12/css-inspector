@@ -943,7 +943,38 @@
     });
     
     // Copy buttons
-    body.querySelectorAll('.csi-copy-btn, .csi-copy-html-btn').forEach(btn => {
+    body.querySelectorAll('.csi-copy-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        // Get the property row
+        const propRow = btn.closest('.csi-prop-row');
+        if (propRow) {
+          const propertyName = propRow.dataset.property;
+          // Get current value from input/select/text
+          const input = propRow.querySelector('.csi-prop-input');
+          const select = propRow.querySelector('.csi-prop-select');
+          const valueSpan = propRow.querySelector('.csi-prop-value');
+
+          let currentValue = '';
+          if (input) {
+            currentValue = input.value;
+          } else if (select) {
+            currentValue = select.value;
+          } else if (valueSpan) {
+            currentValue = valueSpan.textContent;
+          }
+
+          const copyText = `${propertyName}: ${currentValue};`;
+          copyToClipboard(copyText, btn);
+        } else {
+          // Fallback to data-copy attribute
+          copyToClipboard(btn.dataset.copy, btn);
+        }
+      };
+    });
+
+    // Copy HTML button
+    body.querySelectorAll('.csi-copy-html-btn').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
         copyToClipboard(btn.dataset.copy, btn);
