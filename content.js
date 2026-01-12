@@ -13,7 +13,9 @@
   let addedProperties = {}; // Track added properties per element
   let styleHistory = []; // Track style changes
   let historyIndex = -1; // Current position in history
-  let originalStyles = new Map(); // Store original styles for each element
+  let originalStyles = new Map(); // Store original inline styles for each element
+  let modifiedElements = new Set(); // Track which elements have been modified
+  let originalPropertyValues = new Map(); // Store original computed values for each property per element
 
   window.CSSInspector = { toggle };
   
@@ -155,6 +157,12 @@
           <span>CSS Inspector</span>
         </div>
         <div class="csi-header-btns">
+          <button class="csi-btn-icon" id="csi-revert" title="Revert to Default" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </button>
           <button class="csi-btn-icon" id="csi-copy-all" title="Copy All Styles">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -186,6 +194,7 @@
     
     panel.querySelector('#csi-close').onclick = deactivate;
     panel.querySelector('#csi-copy-all').onclick = copyAllStyles;
+    panel.querySelector('#csi-revert').onclick = revertToDefault;
 
     panel.addEventListener('mousedown', e => e.stopPropagation(), true);
     panel.addEventListener('mousemove', e => e.stopPropagation(), true);
@@ -259,34 +268,172 @@
   
   function onClick(e) {
     if (!isActive) return;
-    
+
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (!el || isInspectorElement(el)) return;
-    
+
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    
+
     selectedElement = el;
-    
+
+    // Save original inline styles when element is first selected
+    saveOriginalStyles(el);
+
     const rect = el.getBoundingClientRect();
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
-    
+
     // Position select box
     selectOverlay.style.left = (rect.left + scrollX) + 'px';
     selectOverlay.style.top = (rect.top + scrollY) + 'px';
     selectOverlay.style.width = rect.width + 'px';
     selectOverlay.style.height = rect.height + 'px';
     selectOverlay.style.display = 'block';
-    
+
     // Position select label
     selectLabel.innerHTML = `<span style="display:inline-block;width:16px;height:16px;background:rgba(255,255,255,0.2);border-radius:3px;text-align:center;line-height:16px;margin-right:6px;font-style:italic;font-family:serif;">✓</span>${getElementSelector(el)}`;
     selectLabel.style.left = (rect.left + scrollX) + 'px';
     selectLabel.style.top = (rect.bottom + scrollY) + 'px';
     selectLabel.style.display = 'block';
-    
+
     renderInspector(el);
+    return false;
+  }
+
+  function saveOriginalStyles(el) {
+    const elementKey = getElementKey(el);
+    if (!elementKey || originalStyles.has(elementKey)) return;
+
+    // Save the original inline style attribute
+    originalStyles.set(elementKey, el.getAttribute('style') || '');
+
+    // Save original computed values for all CSS properties
+    const computedStyles = window.getComputedStyle(el);
+    const propertyValues = {};
+
+    // Get all CSS properties from getAllCSSProperties
+    const allCategories = getAllCSSProperties();
+    const allProps = new Set();
+
+    Object.values(allCategories).forEach(categoryProps => {
+      categoryProps.forEach(prop => allProps.add(prop));
+    });
+
+    allProps.forEach(prop => {
+      propertyValues[prop] = computedStyles.getPropertyValue(prop);
+    });
+
+    originalPropertyValues.set(elementKey, propertyValues);
+  }
+
+  function markAsModified() {
+    if (!selectedElement) return;
+
+    const elementKey = getElementKey(selectedElement);
+    if (elementKey) {
+      modifiedElements.add(elementKey);
+      updateRevertButtonVisibility();
+    }
+  }
+
+  function updateRevertButtonVisibility() {
+    const revertBtn = panel?.querySelector('#csi-revert');
+    if (!revertBtn) return;
+
+    const elementKey = selectedElement ? getElementKey(selectedElement) : null;
+    const isModified = elementKey && modifiedElements.has(elementKey);
+
+    revertBtn.style.display = isModified ? 'flex' : 'none';
+  }
+
+  function revertToDefault() {
+    if (!selectedElement) return;
+
+    const elementKey = getElementKey(selectedElement);
+    if (!elementKey) return;
+
+    // Restore original inline styles
+    const originalStyle = originalStyles.get(elementKey);
+    if (originalStyle !== undefined) {
+      if (originalStyle === '') {
+        selectedElement.removeAttribute('style');
+      } else {
+        selectedElement.setAttribute('style', originalStyle);
+      }
+    }
+
+    // Clear tracking data
+    modifiedElements.delete(elementKey);
+    if (addedProperties[elementKey]) {
+      delete addedProperties[elementKey];
+    }
+
+    // Update UI
+    updateSelectPosition();
+    renderInspector(selectedElement);
+  }
+
+  function revertProperty(propertyName) {
+    if (!selectedElement) return;
+
+    const elementKey = getElementKey(selectedElement);
+    if (!elementKey) return;
+
+    // Get the original value
+    const originalValues = originalPropertyValues.get(elementKey);
+    if (!originalValues) return;
+
+    const originalValue = originalValues[propertyName];
+    if (originalValue === undefined) return;
+
+    // Remove this property from inline styles
+    const camelCaseProperty = toCamelCase(propertyName);
+    selectedElement.style[camelCaseProperty] = '';
+
+    // Check if there are any other inline styles remaining
+    const hasOtherInlineStyles = selectedElement.getAttribute('style') && selectedElement.getAttribute('style').trim() !== '';
+
+    // If no inline styles remain, check if we should mark as unmodified
+    if (!hasOtherInlineStyles) {
+      const originalStyle = originalStyles.get(elementKey);
+      if (originalStyle === '') {
+        selectedElement.removeAttribute('style');
+      }
+    }
+
+    // Check if all properties have been reverted
+    const stillHasModifications = checkIfAnyPropertyModified();
+    if (!stillHasModifications) {
+      modifiedElements.delete(elementKey);
+    }
+
+    // Update UI
+    updateSelectPosition();
+    renderInspector(selectedElement);
+  }
+
+  function checkIfAnyPropertyModified() {
+    if (!selectedElement) return false;
+
+    const elementKey = getElementKey(selectedElement);
+    if (!elementKey) return false;
+
+    const originalValues = originalPropertyValues.get(elementKey);
+    if (!originalValues) return false;
+
+    const allProps = Object.keys(originalValues);
+    const computedStyles = window.getComputedStyle(selectedElement);
+
+    for (const prop of allProps) {
+      const currentValue = computedStyles.getPropertyValue(prop);
+      const originalValue = originalValues[prop];
+      if (currentValue !== originalValue) {
+        return true;
+      }
+    }
+
     return false;
   }
   
@@ -344,8 +491,11 @@
       }
     }
 
+    // Check if this property has been modified
+    const isModified = isPropertyModified(name);
+
     return `
-      <div class="csi-prop-row">
+      <div class="csi-prop-row ${isModified ? 'csi-prop-modified' : ''}" data-property="${name}">
         <span class="csi-prop-name">${name}</span>
         <div class="csi-prop-value-wrap">
           ${hasColorPicker ?
@@ -360,6 +510,15 @@
             `<input type="text" class="csi-prop-input" data-property="${name}" value="${displayValue}" title="Click to edit">` :
             `<span class="csi-prop-value">${displayValue}</span>`
           }
+          ${isModified ?
+            `<button class="csi-revert-prop-btn" data-property="${name}" title="Revert to default">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+              </svg>
+            </button>` :
+            ''
+          }
           <button class="csi-copy-btn" data-copy="${name}: ${displayValue};" title="Copy">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -369,6 +528,71 @@
         </div>
       </div>
     `;
+  }
+
+  function isPropertyModified(propertyName) {
+    if (!selectedElement) return false;
+
+    const elementKey = getElementKey(selectedElement);
+    if (!elementKey) return false;
+
+    // Get original and current values
+    const originalValues = originalPropertyValues.get(elementKey);
+    if (!originalValues) return false;
+
+    // If the property wasn't saved originally, save it now
+    if (originalValues[propertyName] === undefined) {
+      return false;
+    }
+
+    const currentValue = window.getComputedStyle(selectedElement).getPropertyValue(propertyName);
+    const originalValue = originalValues[propertyName];
+
+    // Compare values (trim and normalize)
+    return currentValue !== originalValue;
+  }
+
+  function updatePropertyRevertButton(propertyName) {
+    if (!panel) return;
+
+    const isModified = isPropertyModified(propertyName);
+    const propRow = panel.querySelector(`.csi-prop-row[data-property="${propertyName}"]`);
+
+    if (!propRow) return;
+
+    // Toggle modified class
+    if (isModified) {
+      propRow.classList.add('csi-prop-modified');
+    } else {
+      propRow.classList.remove('csi-prop-modified');
+    }
+
+    // Check if revert button exists
+    let revertBtn = propRow.querySelector('.csi-revert-prop-btn');
+    const valueWrap = propRow.querySelector('.csi-prop-value-wrap');
+    const copyBtn = propRow.querySelector('.csi-copy-btn');
+
+    if (isModified && !revertBtn) {
+      // Create and insert revert button before copy button
+      revertBtn = document.createElement('button');
+      revertBtn.className = 'csi-revert-prop-btn';
+      revertBtn.dataset.property = propertyName;
+      revertBtn.title = 'Revert to default';
+      revertBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+      `;
+      revertBtn.onclick = (e) => {
+        e.stopPropagation();
+        revertProperty(propertyName);
+      };
+      valueWrap.insertBefore(revertBtn, copyBtn);
+    } else if (!isModified && revertBtn) {
+      // Remove revert button if property is no longer modified
+      revertBtn.remove();
+    }
   }
 
   function getDropdownOptions(property) {
@@ -725,6 +949,15 @@
         copyToClipboard(btn.dataset.copy, btn);
       };
     });
+
+    // Property revert buttons
+    body.querySelectorAll('.csi-revert-prop-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const propertyName = btn.dataset.property;
+        revertProperty(propertyName);
+      };
+    });
     
     // Search
     const search = body.querySelector('.csi-search');
@@ -746,6 +979,8 @@
         const value = input.value;
         if (selectedElement) {
           selectedElement.style[toCamelCase(property)] = value;
+          markAsModified();
+          updatePropertyRevertButton(property);
           updateSelectPosition();
         }
       };
@@ -773,6 +1008,8 @@
         const value = picker.value;
         if (selectedElement) {
           selectedElement.style[toCamelCase(property)] = value;
+          markAsModified();
+          updatePropertyRevertButton(property);
 
           // Update the corresponding text input if it exists
           const textInput = picker.parentElement.querySelector('.csi-prop-input');
@@ -799,6 +1036,8 @@
         const value = select.value;
         if (selectedElement) {
           selectedElement.style[toCamelCase(property)] = value;
+          markAsModified();
+          updatePropertyRevertButton(property);
           updateSelectPosition();
         }
       };
@@ -817,6 +1056,9 @@
         showAddPropertyForm();
       };
     }
+
+    // Update revert button visibility
+    updateRevertButtonVisibility();
   }
 
   function showAddPropertyForm() {
@@ -957,6 +1199,7 @@
       // Apply the CSS property to the selected element
       if (selectedElement) {
         selectedElement.style[toCamelCase(selectedProp)] = value;
+        markAsModified();
         updateSelectPosition();
 
         // Track the added property
