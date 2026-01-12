@@ -11,7 +11,10 @@
   let selectedElement = null;
   let copiedTimeout = null;
   let addedProperties = {}; // Track added properties per element
-  
+  let styleHistory = []; // Track style changes
+  let historyIndex = -1; // Current position in history
+  let originalStyles = new Map(); // Store original styles for each element
+
   window.CSSInspector = { toggle };
   
   function toggle() {
@@ -152,6 +155,13 @@
           <span>CSS Inspector</span>
         </div>
         <div class="csi-header-btns">
+          <button class="csi-btn-icon" id="csi-export-menu" title="Export Styles">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
           <button class="csi-btn-icon" id="csi-copy-all" title="Copy All Styles">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -163,6 +173,29 @@
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
+          </button>
+        </div>
+        <div class="csi-export-dropdown" id="csi-export-dropdown" style="display: none;">
+          <button class="csi-dropdown-item" id="csi-export-css">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Export as CSS File
+          </button>
+          <button class="csi-dropdown-item" id="csi-generate-class">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            Generate CSS Class
+          </button>
+          <button class="csi-dropdown-item" id="csi-copy-selector">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            Copy Full Selector Path
           </button>
         </div>
       </div>
@@ -183,6 +216,38 @@
     
     panel.querySelector('#csi-close').onclick = deactivate;
     panel.querySelector('#csi-copy-all').onclick = copyAllStyles;
+
+    // Export menu toggle
+    const exportBtn = panel.querySelector('#csi-export-menu');
+    const exportDropdown = panel.querySelector('#csi-export-dropdown');
+    exportBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isVisible = exportDropdown.style.display === 'block';
+      exportDropdown.style.display = isVisible ? 'none' : 'block';
+    };
+
+    // Export dropdown items
+    panel.querySelector('#csi-export-css').onclick = (e) => {
+      e.stopPropagation();
+      exportDropdown.style.display = 'none';
+      exportAsCSS();
+    };
+    panel.querySelector('#csi-generate-class').onclick = (e) => {
+      e.stopPropagation();
+      exportDropdown.style.display = 'none';
+      generateCSSClass();
+    };
+    panel.querySelector('#csi-copy-selector').onclick = (e) => {
+      e.stopPropagation();
+      exportDropdown.style.display = 'none';
+      copyFullSelector();
+    };
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+      if (exportDropdown) exportDropdown.style.display = 'none';
+    });
+
     panel.addEventListener('mousedown', e => e.stopPropagation(), true);
     panel.addEventListener('mousemove', e => e.stopPropagation(), true);
   }
@@ -1034,5 +1099,164 @@
       if (line.match(/^<\w[^>]*[^\/]>/) && !line.match(/^<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)/i) && !line.includes('</')) indent++;
     });
     return result.trim();
+  }
+
+  // ===== Export Functions =====
+  function getFullSelector(el) {
+    if (!el || el === document.body) return 'body';
+
+    const names = [];
+    while (el && el !== document.body) {
+      let name = el.tagName.toLowerCase();
+
+      if (el.id) {
+        name += '#' + el.id;
+        names.unshift(name);
+        break;
+      } else if (el.className && typeof el.className === 'string') {
+        const classes = el.className.trim().split(/\s+/).filter(c => !c.startsWith('csi-'));
+        if (classes.length > 0) {
+          name += '.' + classes.join('.');
+        }
+      }
+
+      // Add nth-child if no id or class
+      if (!el.id && (!el.className || el.className.length === 0)) {
+        const parent = el.parentElement;
+        if (parent) {
+          const children = Array.from(parent.children).filter(c => c.tagName === el.tagName);
+          if (children.length > 1) {
+            const index = children.indexOf(el) + 1;
+            name += `:nth-child(${index})`;
+          }
+        }
+      }
+
+      names.unshift(name);
+      el = el.parentElement;
+    }
+
+    return names.join(' > ');
+  }
+
+  function exportAsCSS() {
+    if (!selectedElement) {
+      alert('Please select an element first');
+      return;
+    }
+
+    const styles = window.getComputedStyle(selectedElement);
+    const selector = getFullSelector(selectedElement);
+
+    // Get all relevant CSS properties
+    const props = [
+      'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing',
+      'text-align', 'text-transform', 'text-decoration', 'color', 'background-color',
+      'background', 'border-color', 'width', 'height', 'min-width', 'min-height',
+      'max-width', 'max-height', 'padding', 'padding-top', 'padding-right', 'padding-bottom',
+      'padding-left', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+      'border', 'border-width', 'border-style', 'border-radius', 'display', 'position',
+      'top', 'right', 'bottom', 'left', 'z-index', 'flex-direction', 'flex-wrap',
+      'justify-content', 'align-items', 'align-content', 'gap', 'flex', 'opacity',
+      'box-shadow', 'text-shadow', 'transform', 'transition', 'overflow', 'cursor'
+    ];
+
+    let css = `/* Exported from CSS Inspector Pro */\n/* ${new Date().toLocaleString()} */\n\n${selector} {\n`;
+
+    props.forEach(prop => {
+      const value = styles.getPropertyValue(prop);
+      if (value && value !== 'none' && value !== 'normal' && value !== 'auto' && value !== 'rgba(0, 0, 0, 0)') {
+        css += `  ${prop}: ${value};\n`;
+      }
+    });
+
+    css += '}\n';
+
+    // Download as file
+    const blob = new Blob([css], { type: 'text/css' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `styles-${Date.now()}.css`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showNotification('CSS file downloaded!');
+  }
+
+  function generateCSSClass() {
+    if (!selectedElement) {
+      alert('Please select an element first');
+      return;
+    }
+
+    const styles = window.getComputedStyle(selectedElement);
+    const tag = selectedElement.tagName.toLowerCase();
+    const className = `${tag}-style-${Date.now()}`;
+
+    const props = [
+      'font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing',
+      'text-align', 'text-transform', 'text-decoration', 'color', 'background-color',
+      'border-color', 'width', 'height', 'padding', 'margin', 'border', 'border-radius',
+      'display', 'position', 'z-index', 'flex-direction', 'justify-content', 'align-items',
+      'gap', 'opacity', 'box-shadow', 'transform', 'transition'
+    ];
+
+    let css = `.${className} {\n`;
+
+    props.forEach(prop => {
+      const value = styles.getPropertyValue(prop);
+      if (value && value !== 'none' && value !== 'normal' && value !== 'auto' && value !== 'rgba(0, 0, 0, 0)') {
+        css += `  ${prop}: ${value};\n`;
+      }
+    });
+
+    css += '}';
+
+    navigator.clipboard.writeText(css).then(() => {
+      showNotification(`CSS class ".${className}" copied to clipboard!`);
+    });
+  }
+
+  function copyFullSelector() {
+    if (!selectedElement) {
+      alert('Please select an element first');
+      return;
+    }
+
+    const selector = getFullSelector(selectedElement);
+    navigator.clipboard.writeText(selector).then(() => {
+      showNotification('Full CSS selector copied!');
+    });
+  }
+
+  function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'csi-notification';
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+      z-index: 2147483647;
+      animation: slideIn 0.3s ease-out;
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease-out';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
   }
 })();
