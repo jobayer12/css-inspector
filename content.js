@@ -536,13 +536,29 @@
     const elementKey = getElementKey(selectedElement);
     if (!elementKey) return false;
 
-    // Get original and current values
+    // Check if the element has been marked as modified
+    if (!modifiedElements.has(elementKey)) return false;
+
+    // Get original inline styles
+    const originalStyle = originalStyles.get(elementKey);
+    const currentStyle = selectedElement.getAttribute('style') || '';
+
+    // If both are empty or same, not modified
+    if (originalStyle === currentStyle) return false;
+
+    // Check if this specific property has an inline style set
+    const camelCaseProperty = toCamelCase(propertyName);
+    const hasInlineStyle = selectedElement.style[camelCaseProperty] !== '';
+
+    if (!hasInlineStyle) return false;
+
+    // Get original and current computed values
     const originalValues = originalPropertyValues.get(elementKey);
     if (!originalValues) return false;
 
-    // If the property wasn't saved originally, save it now
+    // If the property wasn't saved originally, it's a new addition
     if (originalValues[propertyName] === undefined) {
-      return false;
+      return true;
     }
 
     const currentValue = window.getComputedStyle(selectedElement).getPropertyValue(propertyName);
@@ -629,8 +645,8 @@
     return {
       'Typography': ['font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'letter-spacing', 'text-align', 'text-transform', 'text-decoration', 'text-indent', 'word-spacing'],
       'Colors': ['color', 'background-color', 'border-color', 'outline-color'],
-      'Spacing & Size': ['width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left'],
-      'Border': ['border', 'border-width', 'border-style', 'border-color', 'border-radius', 'border-top', 'border-right', 'border-bottom', 'border-left', 'outline', 'outline-width', 'outline-style'],
+      'Spacing & Size': ['width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'border', 'border-radius'],
+      'Border': ['border-width', 'border-style', 'border-color', 'border-top', 'border-right', 'border-bottom', 'border-left', 'outline', 'outline-width', 'outline-style'],
       'Layout': ['display', 'position', 'top', 'right', 'bottom', 'left', 'z-index', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'align-content', 'gap', 'row-gap', 'column-gap', 'flex', 'flex-grow', 'flex-shrink', 'flex-basis', 'order', 'grid-template-columns', 'grid-template-rows', 'grid-gap'],
       'Effects': ['opacity', 'box-shadow', 'text-shadow', 'transform', 'transition', 'animation', 'filter', 'backdrop-filter'],
       'Other': ['overflow', 'overflow-x', 'overflow-y', 'cursor', 'visibility', 'white-space', 'word-break', 'box-sizing', 'float', 'clear', 'object-fit', 'pointer-events']
@@ -646,7 +662,7 @@
   function rgbToHex(color) {
     // If already hex, return it
     if (color.startsWith('#')) {
-      return color.length === 7 ? color : '#000000';
+      return color.length === 7 ? color : '#ffffff';
     }
 
     // Convert rgb/rgba to hex
@@ -659,7 +675,7 @@
     }
 
     // Named colors or other formats - return black as fallback
-    return '#000000';
+    return '#ffffff';
   }
   
   function createSection(icon, title, content) {
