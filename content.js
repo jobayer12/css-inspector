@@ -97,12 +97,12 @@
       pointer-events: none;
       border: 2px solid #e91e8a;
       background: rgba(233, 30, 138, 0.1);
-      z-index: 2147483644;
+      z-index: 2147483630;
       display: none;
       box-sizing: border-box;
     `;
     document.body.appendChild(selectOverlay);
-    
+
     // Select label
     selectLabel = document.createElement('div');
     selectLabel.id = 'csi-select-label';
@@ -115,7 +115,7 @@
       font-size: 12px;
       padding: 4px 8px;
       border-radius: 0 0 4px 4px;
-      z-index: 2147483645;
+      z-index: 2147483631;
       display: none;
       white-space: nowrap;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -470,88 +470,32 @@
     const height = Math.round(rect.height);
 
     return `
-      <div class="csi-box-model-grid">
-        <!-- Margin Row -->
-        <div class="csi-box-model-row">
-          <div class="csi-box-model-label">Margin</div>
-          <div class="csi-box-model-values">
-            <div class="csi-box-value">
-              <span class="csi-box-direction">↑</span>
-              <span>${Math.round(margin.top)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">→</span>
-              <span>${Math.round(margin.right)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">↓</span>
-              <span>${Math.round(margin.bottom)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">←</span>
-              <span>${Math.round(margin.left)}</span>
-            </div>
-          </div>
-        </div>
+      <div class="csi-box-diagram">
+        <div class="csi-box-layer csi-box-margin">
+          <div class="csi-box-label">margin</div>
+          <div class="csi-box-edge csi-edge-top">${Math.round(margin.top)}</div>
+          <div class="csi-box-edge csi-edge-right">${Math.round(margin.right)}</div>
+          <div class="csi-box-edge csi-edge-bottom">${Math.round(margin.bottom)}</div>
+          <div class="csi-box-edge csi-edge-left">${Math.round(margin.left)}</div>
 
-        <!-- Border Row -->
-        <div class="csi-box-model-row">
-          <div class="csi-box-model-label">Border</div>
-          <div class="csi-box-model-values">
-            <div class="csi-box-value">
-              <span class="csi-box-direction">↑</span>
-              <span>${Math.round(border.top)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">→</span>
-              <span>${Math.round(border.right)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">↓</span>
-              <span>${Math.round(border.bottom)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">←</span>
-              <span>${Math.round(border.left)}</span>
-            </div>
-          </div>
-        </div>
+          <div class="csi-box-layer csi-box-border">
+            <div class="csi-box-label">border</div>
+            <div class="csi-box-edge csi-edge-top">${Math.round(border.top)}</div>
+            <div class="csi-box-edge csi-edge-right">${Math.round(border.right)}</div>
+            <div class="csi-box-edge csi-edge-bottom">${Math.round(border.bottom)}</div>
+            <div class="csi-box-edge csi-edge-left">${Math.round(border.left)}</div>
 
-        <!-- Padding Row -->
-        <div class="csi-box-model-row">
-          <div class="csi-box-model-label">Padding</div>
-          <div class="csi-box-model-values">
-            <div class="csi-box-value">
-              <span class="csi-box-direction">↑</span>
-              <span>${Math.round(padding.top)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">→</span>
-              <span>${Math.round(padding.right)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">↓</span>
-              <span>${Math.round(padding.bottom)}</span>
-            </div>
-            <div class="csi-box-value">
-              <span class="csi-box-direction">←</span>
-              <span>${Math.round(padding.left)}</span>
-            </div>
-          </div>
-        </div>
+            <div class="csi-box-layer csi-box-padding">
+              <div class="csi-box-label">padding</div>
+              <div class="csi-box-edge csi-edge-top">${Math.round(padding.top)}</div>
+              <div class="csi-box-edge csi-edge-right">${Math.round(padding.right)}</div>
+              <div class="csi-box-edge csi-edge-bottom">${Math.round(padding.bottom)}</div>
+              <div class="csi-box-edge csi-edge-left">${Math.round(padding.left)}</div>
 
-        <!-- Content Row -->
-        <div class="csi-box-model-row csi-box-model-content-row">
-          <div class="csi-box-model-label">Content</div>
-          <div class="csi-box-model-content-size">
-            <span class="csi-box-dimension">
-              <span class="csi-dimension-label">W:</span>
-              <span class="csi-dimension-value">${width}px</span>
-            </span>
-            <span class="csi-box-dimension">
-              <span class="csi-dimension-label">H:</span>
-              <span class="csi-dimension-value">${height}px</span>
-            </span>
+              <div class="csi-box-content">
+                <div class="csi-box-size">${width} × ${height}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

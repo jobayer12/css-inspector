@@ -894,107 +894,94 @@
   cursor: not-allowed !important;
 }
 
-/* ===== Box Model - Grid Design ===== */
-.csi-box-model-grid {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 8px !important;
+/* ===== Box Model - Nested Box Design ===== */
+.csi-box-diagram {
+  padding: 16px !important;
   font-family: 'SF Mono', Monaco, monospace !important;
 }
 
-.csi-box-model-row {
-  display: grid !important;
-  grid-template-columns: 80px 1fr !important;
-  align-items: center !important;
-  gap: 12px !important;
-  padding: 10px 12px !important;
-  background: #f9fafb !important;
-  border-radius: 8px !important;
-  border: 1px solid #e5e7eb !important;
+.csi-box-layer {
+  position: relative !important;
+  padding: 20px !important;
+  border-radius: 4px !important;
 }
 
-.csi-box-model-row:nth-child(1) {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
-  border-color: #fbbf24 !important;
+.csi-box-margin {
+  background: #fef3c7 !important;
+  border: 1px solid #fbbf24 !important;
 }
 
-.csi-box-model-row:nth-child(2) {
-  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%) !important;
-  border-color: #a78bfa !important;
+.csi-box-border {
+  background: #ddd6fe !important;
+  border: 1px solid #a78bfa !important;
 }
 
-.csi-box-model-row:nth-child(3) {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%) !important;
-  border-color: #60a5fa !important;
+.csi-box-padding {
+  background: #bfdbfe !important;
+  border: 1px solid #60a5fa !important;
 }
 
-.csi-box-model-content-row {
+.csi-box-content {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-  border-color: #7c3aed !important;
-}
-
-.csi-box-model-label {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: #374151 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-}
-
-.csi-box-model-content-row .csi-box-model-label {
-  color: #ffffff !important;
-}
-
-.csi-box-model-values {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  gap: 6px !important;
-}
-
-.csi-box-value {
+  padding: 24px !important;
+  border-radius: 4px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
-  padding: 6px 8px !important;
-  background: rgba(255, 255, 255, 0.7) !important;
-  border-radius: 6px !important;
-  font-size: 11px !important;
+  min-height: 60px !important;
+}
+
+.csi-box-label {
+  position: absolute !important;
+  top: 4px !important;
+  left: 4px !important;
+  font-size: 9px !important;
   font-weight: 600 !important;
-  color: #1f2937 !important;
-  border: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-.csi-box-direction {
-  font-size: 10px !important;
-  opacity: 0.6 !important;
-}
-
-.csi-box-model-content-size {
-  display: flex !important;
-  gap: 12px !important;
-  justify-content: flex-start !important;
-}
-
-.csi-box-dimension {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 6px 12px !important;
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 6px !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-}
-
-.csi-dimension-label {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  color: rgba(255, 255, 255, 0.8) !important;
   text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: #6b7280 !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
 }
 
-.csi-dimension-value {
-  font-size: 12px !important;
+.csi-box-edge {
+  position: absolute !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
+}
+
+.csi-edge-top {
+  top: 4px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.csi-edge-right {
+  right: 4px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.csi-edge-bottom {
+  bottom: 4px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.csi-edge-left {
+  left: 4px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.csi-box-size {
+  font-size: 14px !important;
   font-weight: 700 !important;
   color: #ffffff !important;
+  text-align: center !important;
 }
