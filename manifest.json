@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "description": "Beautiful CSS, HTML & Style Inspector with copy functionality",
   "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["<all_urls>"],
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",

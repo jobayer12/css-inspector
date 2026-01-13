@@ -33,6 +33,7 @@ zip -r "$OUTPUT_FILE" \
     background.js \
     content.js \
     styles.css \
+    privacy-policy.html \
     icons/ \
     README.md \
     -x "*.git*" \
@@ -42,8 +43,7 @@ zip -r "$OUTPUT_FILE" \
     -x "*STORE_*" \
     -x "*PRIVACY_*" \
     -x "*PUBLISHING_*" \
-    -x "*PROMOTIONAL_*" \
-    -x "privacy-policy.html"
+    -x "*PROMOTIONAL_*"
 
 # Check if ZIP was created successfully
 if [ -f "$OUTPUT_FILE" ]; then
